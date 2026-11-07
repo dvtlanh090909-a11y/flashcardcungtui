@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tự học và ôn tập cùng Flashcard</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- React & React DOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- PDF.js & SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.03);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(164, 126, 91, 0.25);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body class="bg-[#F9F6F0] text-[#4A403A] antialiased">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const COLOR_OPTIONS = [
+      { id: 'sage', name: 'Xanh Sage', bg: 'bg-[#8A9A86]', text: 'text-[#8A9A86]', cardBg: 'bg-[#8A9A86]/10' },
+      { id: 'olive', name: 'Xanh Ô-liu', bg: 'bg-[#6B705C]', text: 'text-[#6B705C]', cardBg: 'bg-[#6B705C]/10' },
+      { id: 'moss', name: 'Xanh Rêu', bg: 'bg-[#587B62]', text: 'text-[#587B62]', cardBg: 'bg-[#587B62]/10' },
+      { id: 'matcha', name: 'Xanh Matcha', bg: 'bg-[#A3B18A]', text: 'text-[#A3B18A]', cardBg: 'bg-[#A3B18A]/10' },
+      { id: 'pine', name: 'Xanh Thông', bg: 'bg-[#344E41]', text: 'text-[#344E41]', cardBg: 'bg-[#344E41]/10' },
+      { id: 'eucalyptus', name: 'Xanh Bạch Đàn', bg: 'bg-[#588157]', text: 'text-[#588157]', cardBg: 'bg-[#588157]/10' },
+      { id: 'coffee', name: 'Nâu Cà Phê', bg: 'bg-[#6F4E37]', text: 'text-[#6F4E37]', cardBg: 'bg-[#6F4E37]/10' },
+      { id: 'earth', name: 'Nâu Đất', bg: 'bg-[#A47E5B]', text: 'text-[#A47E5B]', cardBg: 'bg-[#A47E5B]/10' },
+      { id: 'cinnamon', name: 'Nâu Quế', bg: 'bg-[#C87941]', text: 'text-[#C87941]', cardBg: 'bg-[#C87941]/10' },
+      { id: 'mocha', name: 'Nâu Mocha', bg: 'bg-[#4A3B32]', text: 'text-[#4A3B32]', cardBg: 'bg-[#4A3B32]/10' },
+      { id: 'terracotta', name: 'Nâu Đất Nung', bg: 'bg-[#B06548]', text: 'text-[#B06548]', cardBg: 'bg-[#B06548]/10' },
+      { id: 'sand', name: 'Nâu Cát', bg: 'bg-[#D3B89D]', text: 'text-[#D3B89D]', cardBg: 'bg-[#D3B89D]/10' },
+      { id: 'taupe', name: 'Xám Nâu Taupe', bg: 'bg-[#8C7A6B]', text: 'text-[#8C7A6B]', cardBg: 'bg-[#8C7A6B]/10' },
+      { id: 'khaki', name: 'Xanh Khaki', bg: 'bg-[#B5B088]', text: 'text-[#B5B088]', cardBg: 'bg-[#B5B088]/10' },
+      { id: 'wheat', name: 'Vàng Lúa Mì', bg: 'bg-[#D4A373]', text: 'text-[#D4A373]', cardBg: 'bg-[#D4A373]/10' },
+      { id: 'chestnut', name: 'Nâu Hạt Dẻ', bg: 'bg-[#5C4033]', text: 'text-[#5C4033]', cardBg: 'bg-[#5C4033]/10' },
+      { id: 'forest', name: 'Xanh Đậm Sẫm', bg: 'bg-[#283618]', text: 'text-[#283618]', cardBg: 'bg-[#283618]/10' }
+    ];
+
+    const getColorObj = (colorId) => COLOR_OPTIONS.find(c => c.id === colorId) || COLOR_OPTIONS[0];
+
+    function QuizQuestionCard({ question, currentIndex, totalQuestions, score, onAnswer, darkMode }) {
+      const [selectedOption, setSelectedOption] = useState(null);
+      const [isAnswered, setIsAnswered] = useState(false);
+
+      const handleSelect = (opt) => {
+        if (isAnswered) return;
+        setSelectedOption(opt);
+        setIsAnswered(true);
+
+        setTimeout(() => {
+          setIsAnswered(false);
+          setSelectedOption(null);
+          onAnswer(opt);
+        }, 900);
+      };
+
+      const correctOpt = question.card.meaningVi || question.card.meaningEn;
+
+      return (
+        <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm space-y-6 ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+          <div className="flex items-center justify-between text-xs font-bold text-stone-400">
+            <span>Câu {currentIndex + 1} / {totalQuestions}</span>
+            <span>Điểm hiện tại: {score}</span>
+          </div>
+
+          <div className="text-center py-4">
+            <span className="px-3 py-1 rounded-full bg-[#A47E5B]/20 text-[#A47E5B] text-xs font-bold uppercase tracking-wider">Từ vựng cần đoán nghĩa</span>
+            <h3 className="text-3xl sm:text-4xl font-extrabold mt-3">{question.card.term}</h3>
+            {question.card.phonetic && <p className="text-xs text-[#A47E5B] mt-1">{question.card.phonetic}</p>}
+          </div>
+
+          <div className="space-y-3">
+            {question.options.map((opt, idx) => {
+              let btnStyle = darkMode ? 'bg-[#2a2e2a] border-[#383e38] text-stone-200 hover:border-[#587B62]' : 'bg-[#F9F6F0] border-[#E8E3DA] text-stone-800 hover:border-[#587B62]';
+              if (isAnswered) {
+                if (opt === correctOpt) {
+                  btnStyle = 'bg-emerald-500 text-white border-emerald-600 font-bold';
+                } else if (opt === selectedOption) {
+                  btnStyle = 'bg-red-500 text-white border-red-600 font-bold';
+                }
+              }
+              return (
+                <button
+                  key={idx}
+                  disabled={isAnswered}
+                  onClick={() => handleSelect(opt)}
+                  className={`w-full p-4 rounded-2xl text-left text-sm font-semibold border transition-all ${btnStyle}`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [currentUser, setCurrentUser] = useState(null);
+      const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+      const [authForm, setAuthForm] = useState({ username: '', password: '' });
+
+      const [darkMode, setDarkMode] = useState(false);
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+
+      const [folders, setFolders] = useState([
+        { id: 'f1', name: 'Tiếng Anh Giao Tiếp', color: 'sage' },
+        { id: 'f2', name: 'Từ Vựng IELTS High-Score', color: 'earth' },
+        { id: 'f3', name: 'Chủ Đề Công Nghệ & AI', color: 'coffee' }
+      ]);
+
+      const [cards, setCards] = useState([
+        { id: 'c1', term: 'Resilience', phonetic: '/rɪˈzɪl.jəns/', meaningVi: 'Sự kiên cường, khả năng hồi phục', meaningEn: 'The capacity to recover quickly from difficulties', example: 'Her resilience helped her overcome every single challenge.', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400', folderId: 'f2' },
+        { id: 'c2', term: 'Serendipity', phonetic: '/ˌser.ənˈdɪp.ə.ti/', meaningVi: 'Sự tình cờ may mắn kỳ diệu', meaningEn: 'Finding valuable things by pure chance', example: 'Meeting my best friend in Paris was complete serendipity.', image: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400', folderId: 'f1' },
+        { id: 'c3', term: 'Algorithm', phonetic: '/ˈæl.ɡə.rɪ.ðəm/', meaningVi: 'Thuật toán máy tính', meaningEn: 'A set of rules to solve a specific problem', example: 'The AI algorithm processes millions of data points instantly.', image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400', folderId: 'f3' }
+      ]);
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const [dailyGoal, setDailyGoal] = useState(10);
+      const [stats, setStats] = useState({ [todayStr]: 0 });
+      
+      const [streakData, setStreakData] = useState({ count: 1, lastLearnedDate: '' });
+      const [expData, setExpData] = useState({ exp: 0, level: 1, goalRewardedToday: false });
+
+      const [selectedCardIds, setSelectedCardIds] = useState([]);
+      const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+      const [targetMoveFolderId, setTargetMoveFolderId] = useState('');
+
+      const [selectedFolderForStudy, setSelectedFolderForStudy] = useState('all');
+      const [currentCardIndex, setCurrentCardIndex] = useState(0);
+      const [isFlipped, setIsFlipped] = useState(false);
+      const [autoPlay, setAutoPlay] = useState(false);
+      const [isShuffled, setIsShuffled] = useState(false);
+      const [shuffledCards, setShuffledCards] = useState(null);
+      const [shuffleToast, setShuffleToast] = useState(false);
+
+      const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+      const [editingFolder, setEditingFolder] = useState(null);
+      const [folderForm, setFolderForm] = useState({ name: '', color: 'sage' });
+
+      const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+      const [editingCard, setEditingCard] = useState(null);
+      const [cardForm, setCardForm] = useState({ term: '', phonetic: '', meaningVi: '', meaningEn: '', example: '', image: '', folderId: '' });
+
+      const [viewingFolder, setViewingFolder] = useState(null);
+      const [quizSettings, setQuizSettings] = useState({ folderId: 'all', count: 5 });
+      const [quizState, setQuizState] = useState({ active: false, questions: [], currentIndex: 0, score: 0, completed: false });
+
+      const [isImporting, setIsImporting] = useState(false);
+      const [importProgress, setImportProgress] = useState({ percent: 0, title: '', desc: '' });
+      const fileInputRef = useRef(null);
+
+      const speakText = (text) => {
+        if ('speechSynthesis' in window && text) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'en-US';
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+
+      const recordStudyProgress = () => {
+        const learnedToday = (stats[todayStr] || 0) + 1;
+        setStats({ ...stats, [todayStr]: learnedToday });
+
+        let newStreakCount = streakData.count;
+        if (streakData.lastLearnedDate !== todayStr) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yStr = yesterday.toISOString().split('T')[0];
+
+          if (streakData.lastLearnedDate === yStr) {
+            newStreakCount += 1;
+          } else if (!streakData.lastLearnedDate) {
+            newStreakCount = 1;
+          }
+          setStreakData({ count: newStreakCount, lastLearnedDate: todayStr });
+        }
+
+        let addedExp = 0;
+        let newGoalRewarded = expData.goalRewardedToday;
+
+        if (learnedToday === dailyGoal && !expData.goalRewardedToday) {
+          addedExp = 5;
+          newGoalRewarded = true;
+          alert(`🎉 Chúc mừng! Bạn đã hoàn thành mục tiêu ${dailyGoal} trong ngày và nhận được +5 EXP!`);
+        } else if (learnedToday > dailyGoal) {
+          addedExp = 2;
+        } else {
+          addedExp = 1;
+        }
+
+        let totalExp = expData.exp + addedExp;
+        let currentLevel = expData.level;
+        const expNeededForNextLevel = currentLevel * 50;
+        if (totalExp >= expNeededForNextLevel) {
+          totalExp -= expNeededForNextLevel;
+          currentLevel += 1;
+          alert(`⭐ Lên cấp! Bạn đã đạt Cấp độ ${currentLevel}!`);
+        }
+
+        setExpData({ exp: totalExp, level: currentLevel, goalRewardedToday: newGoalRewarded });
+      };
+
+      const handleAuthSubmit = (e) => {
+        e.preventDefault();
+        if (!authForm.username.trim() || !authForm.password.trim()) return;
+        setCurrentUser({ displayName: authForm.username });
+        setIsAuthModalOpen(false);
+        alert(`Chào mừng bạn trở lại, ${authForm.username}! Đăng nhập thành công.`);
+        setAuthForm({ username: '', password: '' });
+      };
+
+      const handleBatchMove = () => {
+        if (!targetMoveFolderId || selectedCardIds.length === 0) return;
+        setCards(cards.map(c => selectedCardIds.includes(c.id) ? { ...c, folderId: targetMoveFolderId } : c));
+        setSelectedCardIds([]);
+        setIsMoveModalOpen(false);
+        alert(`Đã chuyển thành công ${selectedCardIds.length} từ vựng sang thư mục mới!`);
+      };
+
+      const handleSaveFolder = (e) => {
+        e.preventDefault();
+        if (!folderForm.name.trim()) return;
+        if (editingFolder) {
+          setFolders(folders.map(f => f.id === editingFolder.id ? { ...f, ...folderForm } : f));
+        } else {
+          setFolders([...folders, { id: 'f_' + Date.now(), ...folderForm }]);
+        }
+        setIsFolderModalOpen(false);
+        setEditingFolder(null);
+        setFolderForm({ name: '', color: 'sage' });
+      };
+
+      const handleDeleteFolder = (id) => {
+        if (folders.length <= 1) return alert('Cần giữ lại ít nhất 1 thư mục!');
+        if (window.confirm('Bạn có muốn xóa thư mục này?')) {
+          const fallbackId = folders.find(f => f.id !== id)?.id || '';
+          setCards(cards.map(c => c.folderId === id ? { ...c, folderId: fallbackId } : c));
+          setFolders(folders.filter(f => f.id !== id));
+        }
+      };
+
+      const handleSaveCard = (e) => {
+        e.preventDefault();
+        if (!cardForm.term.trim() || !cardForm.meaningVi.trim()) return;
+        if (editingCard) {
+          setCards(cards.map(c => c.id === editingCard.id ? { ...c, ...cardForm } : c));
+        } else {
+          setCards([{ id: 'c_' + Date.now(), ...cardForm }, ...cards]);
+        }
+        setIsCardModalOpen(false);
+        setEditingCard(null);
+        setCardForm({ term: '', phonetic: '', meaningVi: '', meaningEn: '', example: '', image: '', folderId: folders[0]?.id || '' });
+        setIsShuffled(false);
+        setShuffledCards(null);
+      };
+
+      const handleDeleteCard = (id) => {
+        if (window.confirm('Bạn có chắc chắn muốn xóa từ vựng này?')) {
+          setCards(cards.filter(c => c.id !== id));
+          setSelectedCardIds(selectedCardIds.filter(cId => cId !== id));
+          setIsShuffled(false);
+          setShuffledCards(null);
+        }
+      };
+
+      const baseCards = selectedFolderForStudy === 'all'
+        ? cards
+        : cards.filter(c => c.folderId === selectedFolderForStudy);
+
+      const activeCards = (isShuffled && shuffledCards) ? shuffledCards : baseCards;
+
+      const handleShuffleCards = () => {
+        if (baseCards.length <= 1) return;
+        const shuffled = [...baseCards].sort(() => Math.random() - 0.5);
+        setShuffledCards(shuffled);
+        setIsShuffled(true);
+        setCurrentCardIndex(0);
+        setIsFlipped(false);
+        setShuffleToast(true);
+        setTimeout(() => setShuffleToast(false), 2200);
+      };
+
+      const handleResetShuffle = () => {
+        setIsShuffled(false);
+        setShuffledCards(null);
+        setCurrentCardIndex(0);
+        setIsFlipped(false);
+      };
+
+      const currentCard = activeCards[currentCardIndex] || activeCards[0];
+
+      const handleNextCard = () => {
+        setIsFlipped(false);
+        setTimeout(() => {
+          setCurrentCardIndex((prev) => (prev + 1) % (activeCards.length || 1));
+          recordStudyProgress();
+        }, 150);
+      };
+
+      const handlePrevCard = () => {
+        setIsFlipped(false);
+        setTimeout(() => {
+          setCurrentCardIndex((prev) => (prev - 1 + activeCards.length) % (activeCards.length || 1));
+        }, 150);
+      };
+
+      useEffect(() => {
+        let interval = null;
+        if (autoPlay && activeCards.length > 0) {
+          interval = setInterval(() => {
+            setIsFlipped(prev => {
+              if (!prev) return true;
+              handleNextCard();
+              return false;
+            });
+          }, 3500);
+        }
+        return () => clearInterval(interval);
+      }, [autoPlay, activeCards, currentCardIndex]);
+
+      const handleFileUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const fileName = file.name.toLowerCase();
+
+        setIsImporting(true);
+        setImportProgress({ percent: 10, title: 'Đang đọc tài liệu...', desc: 'Trích xuất văn bản từ file...' });
+
+        try {
+          let rawText = '';
+          if (fileName.endsWith('.pdf')) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const content = await page.getTextContent();
+              rawText += content.items.map(item => item.str).join(' ') + ' ';
+            }
+          } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv')) {
+            const arrayBuffer = await file.arrayBuffer();
+            const workbook = window.XLSX.read(arrayBuffer, { type: 'array' });
+            workbook.SheetNames.forEach(sheetName => {
+              const sheet = workbook.Sheets[sheetName];
+              const json = window.XLSX.utils.sheet_to_json(sheet, { header: 1 });
+              json.forEach(row => { rawText += row.join(' ') + ' '; });
+            });
+          } else {
+            alert('Vui lòng tải lên định dạng file PDF, XLSX hoặc CSV!');
+            setIsImporting(false);
+            return;
+          }
+
+          const matches = rawText.match(/\b[A-Za-z]{2,}\b/g) || [];
+          const uniqueWords = [...new Set(matches.map(w => w.toLowerCase()))];
+          const stopWords = new Set(['the', 'and', 'for', 'that', 'with', 'you', 'this', 'from', 'have', 'are', 'was', 'not']);
+          const filteredWords = uniqueWords.filter(w => !stopWords.has(w)).slice(0, 30);
+
+          if (filteredWords.length === 0) {
+            alert('Không tìm thấy từ vựng tiếng Anh hợp lệ trong file!');
+            setIsImporting(false);
+            return;
+          }
+
+          setImportProgress({ percent: 30, title: 'Đang tra cứu từ điển tự động...', desc: `Đang lấy dữ liệu định nghĩa cho ${filteredWords.length} từ...` });
+
+          const newExtractedCards = [];
+          const targetFolderId = folders[0]?.id || 'f1';
+
+          for (let i = 0; i < filteredWords.length; i++) {
+            const word = filteredWords[i];
+            let ipa = '';
+            let definition = 'Đang cập nhật nghĩa...';
+            let example = '';
+
+            try {
+              const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+              if (res.ok) {
+                const data = await res.json();
+                const entry = data[0];
+                ipa = entry.phonetic || entry.phonetics?.find(p => p.text)?.text || '';
+                const meaning = entry.meanings?.[0];
+                definition = meaning?.definitions?.[0]?.definition || '';
+                example = meaning?.definitions?.[0]?.example || '';
+              }
+            } catch (err) {
+              console.error(err);
+            }
+
+            newExtractedCards.push({
+              id: 'imp_' + Date.now() + '_' + i,
+              term: word,
+              phonetic: ipa,
+              meaningVi: '',
+              meaningEn: definition,
+              example: example,
+              image: '',
+              folderId: targetFolderId
+            });
+
+            const percent = Math.round(30 + ((i + 1) / filteredWords.length) * 70);
+            setImportProgress({ percent, title: 'Đang tra cứu từ điển tự động...', desc: `Đã xử lý: ${i + 1}/${filteredWords.length} từ` });
+          }
+
+          setCards([...newExtractedCards, ...cards]);
+          setIsImporting(false);
+          setActiveTab('words');
+          alert(`Đã nhập thành công ${newExtractedCards.length} từ vựng mới từ file vào hệ thống!`);
+        } catch (error) {
+          console.error(error);
+          alert('Đã xảy ra lỗi khi đọc file!');
+          setIsImporting(false);
+        }
+      };
+
+      const startQuiz = () => {
+        let pool = quizSettings.folderId === 'all' ? cards : cards.filter(c => c.folderId === quizSettings.folderId);
+        if (pool.length === 0) return alert('Thư mục lựa chọn chưa có từ vựng!');
+
+        const shuffled = [...pool].sort(() => 0.5 - Math.random()).slice(0, Math.min(quizSettings.count, pool.length));
+        const questions = shuffled.map(card => {
+          const wrongOptions = cards.filter(c => c.id !== card.id).sort(() => 0.5 - Math.random()).slice(0, 3).map(c => c.meaningVi || c.meaningEn);
+          const options = [...wrongOptions, card.meaningVi || card.meaningEn].sort(() => 0.5 - Math.random());
+          return { card, options };
+        });
+
+        setQuizState({ active: true, questions, currentIndex: 0, score: 0, completed: false });
+      };
+
+      const handleAnswerQuiz = (option) => {
+        const q = quizState.questions[quizState.currentIndex];
+        const correctOpt = q.card.meaningVi || q.card.meaningEn;
+        const isCorrect = option === correctOpt;
+        const newScore = isCorrect ? quizState.score + 1 : quizState.score;
+
+        if (quizState.currentIndex + 1 < quizState.questions.length) {
+          setQuizState({ ...quizState, currentIndex: quizState.currentIndex + 1, score: newScore });
+        } else {
+          setQuizState({ ...quizState, completed: true, score: newScore });
+        }
+      };
+
+      const exportToCSV = () => {
+        if (cards.length === 0) return alert('Không có dữ liệu để xuất!');
+        let csv = '\uFEFFWord,IPA,Definition,Vietnamese,Example\n';
+        cards.forEach(c => {
+          csv += `"${c.term}","${c.phonetic}","${c.meaningEn}","${c.meaningVi}","${c.example}"\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `flashcards_${Date.now()}.csv`;
+        a.click();
+      };
+
+      const filteredCards = cards.filter(c => 
+        c.term.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        c.meaningVi.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+      return (
+        <div className={`min-h-screen font-sans flex ${darkMode ? 'bg-[#1c1f1c] text-[#E3E7DF]' : 'bg-[#F9F6F0] text-[#4A403A]'}`}>
+          
+          {/* MOBILE OVERLAY */}
+          {isSidebarOpen && (
+            <div onClick={() => setIsSidebarOpen(false)} className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 lg:hidden" />
+          )}
+
+          {/* SIDEBAR */}
+          <aside className={`fixed lg:sticky top-0 left-0 z-50 h-screen w-72 flex-shrink-0 flex flex-col justify-between p-5 border-r transition-transform duration-300 ${
+            isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          } ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+            
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+                  <div className="w-10 h-10 rounded-2xl bg-[#587B62] flex items-center justify-center text-white text-xl font-bold shadow-md">
+                    📖
+                  </div>
+                  <div>
+                    <h1 className="text-base font-bold tracking-tight">Học bằng Flashcard </h1>
+                    <p className="text-[11px] text-[#A47E5B] font-medium">Học Từ Vựng Thông Minh</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-stone-400">✕</button>
+              </div>
+
+              {/* UPLOAD FILE SECTION */}
+              <div className="p-4 rounded-2xl border border-dashed border-[#587B62]/40 bg-[#587B62]/5 text-center space-y-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept=".pdf, .xlsx, .xls, .csv"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#587B62] hover:bg-[#47634f] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center space-x-2"
+                >
+                  <span>📁</span>
+                  <span>Thêm File PDF / Excel</span>
+                </button>
+                <p className="text-[10px] text-stone-400">Tự động bóc tách và tra từ điển</p>
+              </div>
+
+              {/* SEARCH INPUT */}
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3 flex items-center text-xs text-stone-400">🔍</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (activeTab !== 'words') setActiveTab('words');
+                  }}
+                  placeholder="Tìm nhanh từ vựng..."
+                  className={`w-full pl-8 pr-3 py-2 rounded-xl text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-[#587B62] ${
+                    darkMode ? 'bg-[#1c1f1c] border-[#323832] text-stone-200' : 'bg-[#F9F6F0] border-[#E8E3DA] text-stone-800'
+                  }`}
+                />
+              </div>
+
+              {/* NAVIGATION */}
+              <nav className="space-y-1.5">
+                {[
+                  { id: 'dashboard', label: 'Tổng Quan & Tiến Độ', icon: '📊' },
+                  { id: 'folders', label: 'Thư Mục Phân Loại', icon: '📁', count: folders.length },
+                  { id: 'flashcards', label: 'Học Thẻ Flashcard', icon: '🎴' },
+                  { id: 'quiz', label: 'Bài Tập Kiểm Tra', icon: '🎯' },
+                  { id: 'words', label: 'Danh Sách Từ Vựng', icon: '📝', count: cards.length }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }}
+                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-xs font-bold transition-all ${
+                      activeTab === item.id
+                        ? 'bg-[#587B62] text-white shadow-md shadow-[#587B62]/20'
+                        : 'text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800/60 dark:text-stone-400'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-base">{item.icon}</span>
+                      <span>{item.label}</span>
+                    </div>
+                    {item.count !== undefined && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        activeTab === item.id ? 'bg-white/20 text-white' : 'bg-stone-100 dark:bg-stone-800 text-stone-500'
+                      }`}>
+                        {item.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* SIDEBAR FOOTER & USER AUTH */}
+            <div className={`p-3.5 rounded-2xl border space-y-2.5 ${darkMode ? 'bg-[#2a2e2a] border-[#383e38]' : 'bg-[#F9F6F0] border-[#E8E3DA]'}`}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-stone-400 font-medium">Tài khoản</span>
+                {currentUser ? (
+                  <span className="font-bold text-[#587B62]">{currentUser.displayName}</span>
+                ) : (
+                  <button onClick={() => setIsAuthModalOpen(true)} className="text-xs font-bold text-[#A47E5B] underline">
+                    Đăng nhập
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-stone-400 font-medium">Cấp độ & EXP</span>
+                <span className="font-bold text-[#A47E5B]">Lv.{expData.level} ({expData.exp} EXP)</span>
+              </div>
+            </div>
+
+          </aside>
+
+          {/* MAIN CONTAINER */}
+          <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+            
+            {/* TOPBAR */}
+            <header className={`sticky top-0 z-30 backdrop-blur-md border-b px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors ${darkMode ? 'bg-[#232723]/90 border-[#323832]' : 'bg-white/85 border-[#EFECE6]'}`}>
+              <div className="flex items-center space-x-3">
+                <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden w-9 h-9 rounded-2xl border flex items-center justify-center">☰</button>
+                <h2 className="text-sm font-bold capitalize text-stone-700 dark:text-stone-200">
+                  {activeTab === 'dashboard' && '📊 Tổng Quan Tiến Độ'}
+                  {activeTab === 'folders' && '📁 Quản Lý Thư Mục'}
+                  {activeTab === 'flashcards' && '🎴 Thẻ Flashcard 3D'}
+                  {activeTab === 'quiz' && '🎯 Bài Tập Kiểm Tra'}
+                  {activeTab === 'words' && '📝 Danh Sách Từ Vựng'}
+                </h2>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-2xl border text-xs ${darkMode ? 'bg-[#2a2e2a] border-[#383e38]' : 'bg-[#F9F6F0] border-[#E8E3DA]'}`}>
+                  <span>🔥</span>
+                  <span className="font-bold text-[#A47E5B]">{streakData.count} Ngày Streak</span>
+                </div>
+
+                <button onClick={exportToCSV} className="hidden sm:flex items-center space-x-1 px-3 py-1.5 rounded-2xl bg-emerald-600 text-white text-xs font-bold shadow-xs">
+                  <span>📥 Xuất CSV</span>
+                </button>
+
+                <button onClick={() => setDarkMode(!darkMode)} className={`w-9 h-9 rounded-2xl border flex items-center justify-center text-sm ${darkMode ? 'bg-[#2a2e2a] border-[#383e38] text-amber-300' : 'bg-[#F9F6F0] border-[#E8E3DA] text-stone-600'}`}>
+                  {darkMode ? '🌙' : '☀️'}
+                </button>
+              </div>
+            </header>
+
+            {/* IMPORT PROGRESS MODAL */}
+            {isImporting && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                <div className={`w-full max-w-md p-6 rounded-3xl shadow-2xl text-center space-y-4 ${darkMode ? 'bg-[#232723] text-stone-100' : 'bg-white text-stone-800'}`}>
+                  <div className="w-12 h-12 rounded-full bg-[#587B62]/20 text-[#587B62] flex items-center justify-center text-2xl mx-auto animate-spin">⏳</div>
+                  <h3 className="text-lg font-bold">{importProgress.title}</h3>
+                  <p className="text-xs text-stone-400">{importProgress.desc}</p>
+                  <div className="w-full bg-stone-100 dark:bg-stone-800 rounded-full h-3 overflow-hidden">
+                    <div className="bg-[#587B62] h-full transition-all duration-300" style={{ width: `${importProgress.percent}%` }}></div>
+                  </div>
+                  <p className="text-xs font-bold text-[#587B62]">{importProgress.percent}%</p>
+                </div>
+              </div>
+            )}
+
+            {/* CONTENT AREA */}
+            <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-8 py-6">
+
+              {/* DASHBOARD TAB */}
+              {activeTab === 'dashboard' && (
+                <div className="space-y-6">
+                  <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm relative overflow-hidden ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                      <div className="space-y-2 max-w-lg">
+                        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#8A9A86]/20 text-[#587B62] text-xs font-bold">
+                          <span>🎯</span>
+                          <span>Mục tiêu hàng ngày</span>
+                        </div>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold">
+                          Đã học <span className="text-[#587B62]">{stats[todayStr] || 0}</span> / <span className="text-[#A47E5B]">{dailyGoal}</span> từ hôm nay
+                        </h2>
+                        <p className="text-xs text-stone-500">Hoàn thành mục tiêu để nhận +5 EXP và duy trì chuỗi Streak mỗi ngày!</p>
+                      </div>
+
+                      <div className={`p-4 rounded-2xl border ${darkMode ? 'bg-[#2a2e2a] border-[#383e38]' : 'bg-[#F9F6F0] border-[#E8E3DA]'}`}>
+                        <p className="text-xs font-bold mb-2 text-stone-600 dark:text-stone-300">Đặt mục tiêu ngày:</p>
+                        <div className="flex gap-2">
+                          {[5, 10, 20, 30].map(val => (
+                            <button
+                              key={val}
+                              onClick={() => setDailyGoal(val)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                dailyGoal === val ? 'bg-[#587B62] text-white shadow-xs' : 'bg-white dark:bg-[#1c1f1c] border border-stone-200 dark:border-stone-700'
+                              }`}
+                            >
+                              {val} từ
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 w-full bg-stone-100 dark:bg-stone-800 rounded-full h-3.5 p-0.5">
+                      <div
+                        className="bg-gradient-to-r from-[#8A9A86] to-[#587B62] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.round(((stats[todayStr] || 0) / dailyGoal) * 100))}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className={`p-5 rounded-3xl border ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                      <div className="w-10 h-10 rounded-2xl bg-[#8A9A86]/20 text-[#587B62] flex items-center justify-center text-xl mb-3">📚</div>
+                      <p className="text-xs text-stone-500 font-medium">Tổng từ vựng</p>
+                      <p className="text-2xl font-bold mt-1">{cards.length} từ</p>
+                    </div>
+                    <div className={`p-5 rounded-3xl border ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                      <div className="w-10 h-10 rounded-2xl bg-[#A47E5B]/20 text-[#A47E5B] flex items-center justify-center text-xl mb-3">📂</div>
+                      <p className="text-xs text-stone-500 font-medium">Thư mục phân loại</p>
+                      <p className="text-2xl font-bold mt-1">{folders.length} thư mục</p>
+                    </div>
+                    <div className={`p-5 rounded-3xl border ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                      <div className="w-10 h-10 rounded-2xl bg-[#C87941]/20 text-[#C87941] flex items-center justify-center text-xl mb-3">🔥</div>
+                      <p className="text-xs text-stone-500 font-medium">Chuỗi Streak</p>
+                      <p className="text-2xl font-bold mt-1">{streakData.count} ngày</p>
+                    </div>
+                    <div className={`p-5 rounded-3xl border ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                      <div className="w-10 h-10 rounded-2xl bg-[#588157]/20 text-[#588157] flex items-center justify-center text-xl mb-3">⭐</div>
+                      <p className="text-xs text-stone-500 font-medium">Cấp độ học tập</p>
+                      <p className="text-2xl font-bold mt-1">Level {expData.level}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* FOLDERS TAB */}
+              {activeTab === 'folders' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold">Thư Mục Phân Loại Từ Vựng</h2>
+                      <p className="text-xs text-stone-500">Phân loại thẻ học theo chủ đề với 17 màu pastel</p>
+                    </div>
+                    <button
+                      onClick={() => { setEditingFolder(null); setFolderForm({ name: '', color: 'sage' }); setIsFolderModalOpen(true); }}
+                      className="px-4 py-2.5 rounded-2xl bg-[#587B62] text-white text-xs font-bold shadow-md"
+                    >
+                      + Tạo Thư Mục Mới
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {folders.map(folder => {
+                      const colorObj = getColorObj(folder.color);
+                      const folderCards = cards.filter(c => c.folderId === folder.id);
+                      return (
+                        <div key={folder.id} className={`p-5 rounded-3xl border flex flex-col justify-between ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                          <div>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${colorObj.cardBg} ${colorObj.text}`}>{colorObj.name}</span>
+                              <span className="text-xs text-stone-400 font-semibold">{folderCards.length} từ</span>
+                            </div>
+                            <h3 className="text-lg font-bold mb-2">{folder.name}</h3>
+                          </div>
+                          <div className="pt-4 mt-4 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs font-semibold">
+                            <button onClick={() => setViewingFolder(folder)} className="text-[#587B62] hover:underline cursor-pointer">
+                              👁️ Xem danh sách ({folderCards.length})
+                            </button>
+                            <div className="flex space-x-2">
+                              <button onClick={() => { setEditingFolder(folder); setFolderForm({ name: folder.name, color: folder.color }); setIsFolderModalOpen(true); }}>✏️</button>
+                              <button onClick={() => handleDeleteFolder(folder.id)} className="text-red-500">🗑️</button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* FLASHCARDS TAB */}
+              {activeTab === 'flashcards' && (
+                <div className="space-y-6 max-w-2xl mx-auto relative">
+                  {shuffleToast && (
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-[#587B62] text-white text-xs font-bold shadow-lg animate-bounce">
+                      🔀 Đã xáo trộn thứ tự thẻ ngẫu nhiên!
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <select
+                      value={selectedFolderForStudy}
+                      onChange={(e) => {
+                        setSelectedFolderForStudy(e.target.value);
+                        setCurrentCardIndex(0);
+                        setIsFlipped(false);
+                        setIsShuffled(false);
+                        setShuffledCards(null);
+                      }}
+                      className={`w-full sm:w-auto px-4 py-2 rounded-2xl border text-xs font-bold ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}
+                    >
+                      <option value="all">🌟 Tất cả thư mục ({cards.length} từ)</option>
+                      {folders.map(f => (
+                        <option key={f.id} value={f.id}>📁 {f.name} ({cards.filter(c => c.folderId === f.id).length} từ)</option>
+                      ))}
+                    </select>
+
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handleShuffleCards}
+                        disabled={baseCards.length <= 1}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${isShuffled ? 'bg-[#A47E5B] text-white' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'}`}
+                      >
+                        🔀 {isShuffled ? 'Đã Trộn' : 'Trộn Thẻ'}
+                      </button>
+                      {isShuffled && (
+                        <button onClick={handleResetShuffle} className="text-xs text-stone-400">↩️ Đặt lại</button>
+                      )}
+                      <button
+                        onClick={() => setAutoPlay(!autoPlay)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold ${autoPlay ? 'bg-[#587B62] text-white' : 'bg-stone-200 dark:bg-stone-700 text-stone-600 dark:text-stone-300'}`}
+                      >
+                        {autoPlay ? '⏸️ Dừng' : '▶️ Tự Động'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {activeCards.length > 0 && currentCard ? (
+                    <div className="space-y-6">
+                      <div onClick={() => setIsFlipped(!isFlipped)} className="w-full h-[380px] sm:h-[420px] cursor-pointer perspective-1000">
+                        <div
+                          className="relative w-full h-full duration-700 transform-style-3d shadow-xl rounded-3xl"
+                          style={{ transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+                        >
+                          {/* FRONT */}
+                          <div className={`absolute inset-0 w-full h-full rounded-3xl p-6 sm:p-8 flex flex-col justify-between border backface-hidden ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#8A9A86]/20 text-[#587B62]">
+                                Thẻ {currentCardIndex + 1} / {activeCards.length}
+                              </span>
+                              <button onClick={(e) => { e.stopPropagation(); speakText(currentCard.term); }} className="w-10 h-10 rounded-2xl bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-lg">🔊</button>
+                            </div>
+
+                            <div className="text-center my-auto space-y-3">
+                              {currentCard.image && (
+                                <img src={currentCard.image} alt="illustration" className="w-28 h-28 object-cover rounded-2xl mx-auto shadow-sm" onError={(e) => e.target.style.display = 'none'} />
+                              )}
+                              <h2 className="text-3xl sm:text-4xl font-extrabold">{currentCard.term}</h2>
+                              {currentCard.phonetic && <p className="text-sm font-semibold text-[#A47E5B]">{currentCard.phonetic}</p>}
+                            </div>
+
+                            <div className="text-center text-xs text-stone-400">🔄 Chạm thẻ để lật xem nghĩa</div>
+                          </div>
+
+                          {/* BACK */}
+                          <div className={`absolute inset-0 w-full h-full rounded-3xl p-6 sm:p-8 flex flex-col justify-between border backface-hidden rotate-y-180 ${darkMode ? 'bg-[#2a2e2a] border-[#3a403a]' : 'bg-[#FDFBF7] border-[#E8E3DA]'}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#A47E5B]/20 text-[#A47E5B]">Giải nghĩa</span>
+                              <button onClick={(e) => { e.stopPropagation(); speakText(currentCard.meaningVi || currentCard.term); }} className="w-10 h-10 rounded-2xl bg-white dark:bg-[#1c1f1c] flex items-center justify-center text-lg">🔊</button>
+                            </div>
+
+                            <div className="text-center my-auto space-y-4">
+                              <h3 className="text-2xl font-bold text-[#587B62]">{currentCard.meaningVi || currentCard.meaningEn}</h3>
+                              {currentCard.example && (
+                                <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 italic">"{currentCard.example}"</p>
+                              )}
+                            </div>
+
+                            <div className="text-center text-xs text-stone-400">🔄 Chạm để lật lại mặt trước</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <button onClick={handlePrevCard} className="flex-1 py-3.5 rounded-2xl border bg-white dark:bg-[#232723] font-bold text-xs sm:text-sm shadow-xs">← Thẻ trước</button>
+                        <button onClick={() => setIsFlipped(!isFlipped)} className="px-6 py-3.5 rounded-2xl bg-[#A47E5B] text-white font-bold text-xs sm:text-sm shadow-md">🔄 Lật Thẻ</button>
+                        <button onClick={handleNextCard} className="flex-1 py-3.5 rounded-2xl bg-[#587B62] text-white font-bold text-xs sm:text-sm shadow-md">Thẻ tiếp →</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 p-8 rounded-3xl border border-dashed border-stone-300">
+                      <p className="text-4xl mb-3">📭</p>
+                      <h3 className="text-lg font-bold">Chưa có từ vựng trong thư mục này!</h3>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* QUIZ TAB */}
+              {activeTab === 'quiz' && (
+                <div className="max-w-xl mx-auto space-y-6">
+                  {!quizState.active ? (
+                    <div className={`p-6 sm:p-8 rounded-3xl border shadow-sm ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                      <div className="text-center space-y-3 mb-6">
+                        <div className="w-12 h-12 rounded-2xl bg-[#A47E5B]/20 text-[#A47E5B] flex items-center justify-center text-2xl mx-auto">🎯</div>
+                        <h2 className="text-xl font-bold">Bài Tập Trắc Nghiệm Từ Vựng</h2>
+                        <p className="text-xs text-stone-500">Kiểm tra khả năng ghi nhớ với phản hồi màu sắc trực quan (Xanh đúng / Đỏ sai)</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold mb-1.5 text-stone-600 dark:text-stone-300">Chọn nguồn từ vựng:</label>
+                          <select
+                            value={quizSettings.folderId}
+                            onChange={(e) => setQuizSettings({ ...quizSettings, folderId: e.target.value })}
+                            className="w-full px-4 py-3 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm font-semibold focus:outline-none"
+                          >
+                            <option value="all">🌟 Tất cả thư mục</option>
+                            {folders.map(f => (<option key={f.id} value={f.id}>📁 {f.name}</option>))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold mb-1.5 text-stone-600 dark:text-stone-300">Số lượng câu hỏi:</label>
+                          <div className="flex space-x-2">
+                            {[5, 10, 15].map(cnt => (
+                              <button
+                                key={cnt}
+                                onClick={() => setQuizSettings({ ...quizSettings, count: cnt })}
+                                className={`flex-1 py-2.5 rounded-xl text-xs font-bold ${quizSettings.count === cnt ? 'bg-[#587B62] text-white' : 'bg-stone-100 dark:bg-stone-800'}`}
+                              >
+                                {cnt} câu
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <button onClick={startQuiz} className="w-full py-3.5 rounded-2xl bg-[#587B62] text-white font-bold text-sm shadow-md mt-4">
+                          🚀 Bắt Đầu Làm Bài
+                        </button>
+                      </div>
+                    </div>
+                  ) : quizState.completed ? (
+                    <div className={`p-8 rounded-3xl border text-center space-y-4 ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                      <div className="text-4xl">🏆</div>
+                      <h3 className="text-2xl font-bold">Hoàn Thành Bài Kiểm Tra!</h3>
+                      <div className="p-4 rounded-2xl bg-stone-50 dark:bg-stone-800/50 inline-block space-y-1">
+                        <p className="text-base font-bold text-emerald-600">✅ Số câu đúng: {quizState.score}</p>
+                        <p className="text-base font-bold text-red-500">❌ Số câu sai: {quizState.questions.length - quizState.score}</p>
+                      </div>
+
+                      <div className="pt-2">
+                        <button onClick={() => setQuizState({ ...quizState, active: false })} className="px-6 py-3 rounded-2xl bg-[#A47E5B] text-white font-bold text-xs shadow-md">
+                          Làm Bài Mới
+                        </button>
+                      </div>
+					  
+                    </div>
+                  ) : (
+                    <QuizQuestionCard
+                      question={quizState.questions[quizState.currentIndex]}
+                      currentIndex={quizState.currentIndex}
+                      totalQuestions={quizState.questions.length}
+                      score={quizState.score}
+                      onAnswer={handleAnswerQuiz}
+                      darkMode={darkMode}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* WORDS TAB */}
+              {activeTab === 'words' && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-bold">Danh Sách Tất Cả Từ Vựng ({filteredCards.length})</h2>
+                      <p className="text-xs text-stone-500">Tick chọn nhiều từ vựng để chuyển thư mục hàng loạt</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {selectedCardIds.length > 0 && (
+                        <button onClick={() => setIsMoveModalOpen(true)} className="px-4 py-2.5 rounded-2xl bg-[#A47E5B] text-white text-xs font-bold shadow-md">
+                          📦 Chuyển Thư Mục ({selectedCardIds.length})
+                        </button>
+                      )}
+                      <button onClick={() => { setEditingCard(null); setCardForm({ term: '', phonetic: '', meaningVi: '', meaningEn: '', example: '', image: '', folderId: folders[0]?.id || '' }); setIsCardModalOpen(true); }} className="px-4 py-2.5 rounded-2xl bg-[#587B62] text-white text-xs font-bold shadow-md">
+                        + Thêm Từ Mới
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={`rounded-3xl border overflow-hidden ${darkMode ? 'bg-[#232723] border-[#323832]' : 'bg-white border-[#EFECE6]'}`}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className={`border-b text-stone-400 font-bold uppercase ${darkMode ? 'bg-[#2a2e2a] border-[#323832]' : 'bg-[#F9F6F0] border-[#EFECE6]'}`}>
+                          <tr>
+                            <th className="p-4 w-10 text-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedCardIds.length === filteredCards.length && filteredCards.length > 0}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedCardIds(filteredCards.map(c => c.id));
+                                  else setSelectedCardIds([]);
+                                }}
+                              />
+                            </th>
+                            <th className="p-4">Từ vựng & Phiên âm</th>
+                            <th className="p-4">Nghĩa Tiếng Việt</th>
+                            <th className="p-4 hidden md:table-cell">Ví dụ minh họa</th>
+                            <th className="p-4">Thư mục</th>
+                            <th className="p-4 text-right">Thao tác</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
+                          {filteredCards.map(card => {
+                            const cardFolder = folders.find(f => f.id === card.folderId);
+                            const colorObj = cardFolder ? getColorObj(cardFolder.color) : COLOR_OPTIONS[0];
+                            const isSelected = selectedCardIds.includes(card.id);
+
+                            return (
+                              <tr key={card.id} className={isSelected ? 'bg-[#8A9A86]/10' : ''}>
+                                <td className="p-4 text-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      if (isSelected) setSelectedCardIds(selectedCardIds.filter(id => id !== card.id));
+                                      else setSelectedCardIds([...selectedCardIds, card.id]);
+                                    }}
+                                  />
+                                </td>
+                                <td className="p-4">
+                                  <div className="flex items-center space-x-2">
+                                    <div>
+                                      <p className="font-bold text-sm">{card.term}</p>
+                                      <p className="text-[10px] text-[#A47E5B]">{card.phonetic}</p>
+                                    </div>
+                                    <button onClick={() => speakText(card.term)}>🔊</button>
+                                  </div>
+                                </td>
+                                <td className="p-4 font-semibold">{card.meaningVi}</td>
+                                <td className="p-4 hidden md:table-cell text-stone-500 italic max-w-xs truncate">{card.example || '—'}</td>
+                                <td className="p-4">
+                                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${colorObj.cardBg} ${colorObj.text}`}>
+                                    {cardFolder?.name || 'Chưa phân loại'}
+                                  </span>
+                                </td>
+                                <td className="p-4 text-right space-x-2">
+                                  <button onClick={() => { setEditingCard(card); setCardForm(card); setIsCardModalOpen(true); }}>✏️</button>
+                                  <button onClick={() => handleDeleteCard(card.id)} className="text-red-500">🗑️</button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </main>
+          </div>
+
+          {/* VIEWING FOLDER MODAL */}
+          {viewingFolder && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+              <div className={`w-full max-w-2xl max-h-[85vh] flex flex-col p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-[#232723] text-stone-100' : 'bg-white text-stone-800'}`}>
+                <div className="flex items-center justify-between pb-4 border-b border-stone-100 dark:border-stone-800">
+                  <div className="flex items-center space-x-3">
+                    <span className={`w-4 h-4 rounded-full ${getColorObj(viewingFolder.color).bg}`}></span>
+                    <div>
+                      <h3 className="text-lg font-bold">Thư mục: {viewingFolder.name}</h3>
+                      <p className="text-xs text-stone-400">Tổng số từ: {cards.filter(c => c.folderId === viewingFolder.id).length} từ vựng</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setViewingFolder(null)} className="text-stone-400 hover:text-red-500 text-lg">✕</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto py-4 space-y-3">
+                  {cards.filter(c => c.folderId === viewingFolder.id).length > 0 ? (
+                    cards.filter(c => c.folderId === viewingFolder.id).map(card => (
+                      <div key={card.id} className={`p-4 rounded-2xl border flex items-center justify-between ${darkMode ? 'bg-[#2a2e2a] border-[#383e38]' : 'bg-[#F9F6F0] border-[#E8E3DA]'}`}>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <p className="font-bold text-sm">{card.term}</p>
+                            <span className="text-xs text-[#A47E5B]">{card.phonetic}</span>
+                            <button onClick={() => speakText(card.term)} className="text-xs">🔊</button>
+                          </div>
+                          <p className="text-xs font-semibold text-[#587B62] mt-1">{card.meaningVi || card.meaningEn}</p>
+                        </div>
+                        <div className="flex space-x-2 text-xs">
+                          <button onClick={() => { setEditingCard(card); setCardForm(card); setIsCardModalOpen(true); }}>✏️</button>
+                          <button onClick={() => handleDeleteCard(card.id)} className="text-red-500">🗑️</button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12 text-stone-400 text-xs">Thư mục này chưa có từ vựng nào.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOLDER MODAL */}
+          {isFolderModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+              <div className={`w-full max-w-md p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-[#232723] text-stone-100' : 'bg-white text-stone-800'}`}>
+                <h3 className="text-lg font-bold mb-4">{editingFolder ? 'Chỉnh Sửa Thư Mục' : 'Tạo Thư Mục Mới'}</h3>
+                <form onSubmit={handleSaveFolder} className="space-y-4">
+                  <input
+                    type="text"
+                    required
+                    value={folderForm.name}
+                    onChange={(e) => setFolderForm({ ...folderForm, name: e.target.value })}
+                    placeholder="Tên thư mục..."
+                    className="w-full px-4 py-3 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm focus:outline-none"
+                  />
+                  <div className="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto">
+                    {COLOR_OPTIONS.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setFolderForm({ ...folderForm, color: c.id })}
+                        className={`p-2 rounded-xl flex flex-col items-center ${folderForm.color === c.id ? 'border border-[#587B62]' : ''}`}
+                      >
+                        <span className={`w-5 h-5 rounded-full ${c.bg}`}></span>
+                      </button>
+                    ))}
+                  </div>
+                  <button type="submit" className="w-full py-3 rounded-2xl bg-[#587B62] text-white font-bold text-sm">Lưu Thư Mục</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* CARD MODAL */}
+          {isCardModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+              <div className={`w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-[#232723] text-stone-100' : 'bg-white text-stone-800'}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold">{editingCard ? 'Chỉnh Sửa Từ Vựng' : 'Thêm Từ Vựng Mới'}</h3>
+                  <button onClick={() => setIsCardModalOpen(false)} className="text-stone-400 hover:text-red-500">✕</button>
+                </div>
+                <form onSubmit={handleSaveCard} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      required
+                      value={cardForm.term}
+                      onChange={(e) => setCardForm({ ...cardForm, term: e.target.value })}
+                      placeholder="Từ tiếng Anh..."
+                      className="w-full px-4 py-2.5 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={cardForm.phonetic}
+                      onChange={(e) => setCardForm({ ...cardForm, phonetic: e.target.value })}
+                      placeholder="Phiên âm IPA..."
+                      className="w-full px-4 py-2.5 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm focus:outline-none"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={cardForm.meaningVi}
+                    onChange={(e) => setCardForm({ ...cardForm, meaningVi: e.target.value })}
+                    placeholder="Nghĩa Tiếng Việt..."
+                    className="w-full px-4 py-2.5 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm focus:outline-none"
+                  />
+                  <textarea
+                    rows="2"
+                    value={cardForm.example}
+                    onChange={(e) => setCardForm({ ...cardForm, example: e.target.value })}
+                    placeholder="Câu ví dụ minh họa..."
+                    className="w-full px-4 py-2.5 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm focus:outline-none"
+                  ></textarea>
+                  <select
+                    value={cardForm.folderId}
+                    onChange={(e) => setCardForm({ ...cardForm, folderId: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm font-semibold focus:outline-none"
+                  >
+                    {folders.map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
+                  </select>
+                  <button type="submit" className="w-full py-3 rounded-2xl bg-[#587B62] text-white font-bold text-sm">Lưu Từ Vựng</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* BATCH MOVE MODAL */}
+          {isMoveModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+              <div className={`w-full max-w-sm p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-[#232723] text-stone-100' : 'bg-white text-stone-800'}`}>
+                <h3 className="text-lg font-bold mb-2">📦 Chuyển Thư Mục Hàng Loạt</h3>
+                <p className="text-xs text-stone-400 mb-4">Đang chọn {selectedCardIds.length} từ vựng.</p>
+                <select
+                  value={targetMoveFolderId}
+                  onChange={(e) => setTargetMoveFolderId(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm font-bold mb-4 focus:outline-none"
+                >
+                  <option value="">-- Chọn thư mục đích --</option>
+                  {folders.map(f => (<option key={f.id} value={f.id}>{f.name}</option>))}
+                </select>
+                <div className="flex space-x-2">
+                  <button onClick={() => setIsMoveModalOpen(false)} className="flex-1 py-3 rounded-2xl border text-xs font-bold">Hủy</button>
+                  <button onClick={handleBatchMove} className="flex-1 py-3 rounded-2xl bg-[#A47E5B] text-white text-xs font-bold shadow-md">Xác Nhận</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AUTH MODAL */}
+          {isAuthModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+              <div className={`w-full max-w-sm p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-[#232723] text-stone-100' : 'bg-white text-stone-800'}`}>
+                <h3 className="text-lg font-bold mb-4">🔑 Đăng Nhập Tài Khoản</h3>
+                <form onSubmit={handleAuthSubmit} className="space-y-4">
+                  <input
+                    type="text"
+                    required
+                    value={authForm.username}
+                    onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })}
+                    placeholder="Tên tài khoản..."
+                    className="w-full px-4 py-3 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm focus:outline-none"
+                  />
+                  <input
+                    type="password"
+                    required
+                    value={authForm.password}
+                    onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                    placeholder="Mật khẩu..."
+                    className="w-full px-4 py-3 rounded-2xl border bg-stone-50 dark:bg-[#1c1f1c] text-sm focus:outline-none"
+                  />
+                  <button type="submit" className="w-full py-3.5 rounded-2xl bg-[#587B62] text-white font-bold text-sm shadow-md">Đăng Nhập</button>
+                </form>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
